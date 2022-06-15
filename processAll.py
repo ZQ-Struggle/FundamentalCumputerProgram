@@ -17,10 +17,11 @@ re_zyrandom = re.compile(" *#include *\".*zyrandom.[ch]\"\n")
 re_zydynarry = re.compile(" *#include *\".*dynarray.[ch]\"\n")
 zy_libs_path = "./zylib" # where is all zylib file
 
-tmp_compile_name = "/tmp/judge/compile"
-run_output_name = "/tmp/judge/run_output"
-run_error_name = "/tmp/judge/run_error"
-run_all_res_name = "/tmp/judge/all_res"
+tmp_folder = "/tmp/judge"
+tmp_compile_name =  os.path.join(tmp_folder, "compile")
+run_output_name =  os.path.join(tmp_folder, "run_output")
+run_error_name = os.path.join(tmp_folder, "run_error")
+run_all_res_name = os.path.join(tmp_folder, "all_res")
 in_files = []
 out_files = []
 format_header = "============result of file============\n============%s============\n=====AC %d, RE %d, WA %d, total %d=====\n"
@@ -205,6 +206,8 @@ def process_library(target_file):
             cur_c_libs[2] = library_o_file_names[2]
             lines[idx] = f"#include \"{rel_path}/dynarray.h\"\n"
         # lines[idx] = lines[idx].encode("UTF-8")
+        elif "scanf_s" in line:
+            line.replace("scanf_s", "scanf")
     with open(target_file[:-2]+"_.c", 'w', encoding="utf-8") as f:
         f.writelines(lines)
     return target_file[:-2]+"_.c"
@@ -296,7 +299,8 @@ def judgeFolder(cur_path):
     
     ## process all c file
     target_files.sort()
-    
+    if len(target_files) > len(in_files):
+        return
     for tar_idx, tarF in enumerate(target_files):
         # build one file    
         tarf_name = tarF[:-2]
@@ -305,15 +309,10 @@ def judgeFolder(cur_path):
         compile_res = compile_file(cur_c_libs, cur_h_libs, tarF, output_prefix)
         if compile_res is False:
             continue
-        flag = False
-        for pro_idx, (cases_in, cases_out) in enumerate(zip(in_files, out_files)):
-            res = testOnOne(tarf_name, output_prefix, cases_in, cases_out)
-            if -1 not in res and 1 not in res:
-                flag = True
-                break
-        if flag is False:
-            testOnOne(tarf_name, output_prefix, in_files[tar_idx], out_files[tar_idx], dump_error=True)
-        else:
+        # flag = False
+        # for pro_idx, (cases_in, cases_out) in enumerate(zip(in_files, out_files)):
+        res = testOnOne(tarf_name, output_prefix, in_files[tar_idx], out_files[tar_idx], dump_error=True)
+        if -1 not in res and 1 not in res:
             filename = output_prefix + "_correct"
             with open(filename, 'w') as f:
                 f.write("success\n")
@@ -361,7 +360,7 @@ if __name__ == "__main__":
     parser.add_argument("--section_path", "-s", required=False, type=str, help="target section path", default="")
     parser.add_argument("--project_path", "-p", required=False, type=str, help="target project path", default="")
     parser.add_argument("--test_cases", "-t", required=True, type=str, help="test cases path")
-    
+    parser.add_argument("--tmp_folder", required=False)
     args = parser.parse_args()
     if args.all:
         assert args.section_path != "", "please provide the target section path"
