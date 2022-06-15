@@ -186,11 +186,15 @@ def testOnOne(tarf_name, output_prefix, cases_in, cases_out, dump_error = False)
         
 
 
-def process_library(target_file):
-    target_path = "/".join(target_file.split("/")[:-1])
+def process_library(target_file, output_dir):
+    # target_path = "/".join(target_file.split("/")[:-1])
+    target_path = output_dir
+    output_file = os.path.join(target_path, target_file.split("/")[-1][:-2]+"_.c")
+    if os.path.exists(output_file+"_.c"):
+        return
     rel_path = os.path.relpath(zy_libs_path, target_path)
     try:
-        c_file = open(target_file, 'r')
+        c_file = open(target_file, 'r', encoding="utf-8")
         lines = c_file.readlines()
     except:
         c_file = open(target_file, 'r', encoding="gbk")
@@ -207,10 +211,10 @@ def process_library(target_file):
             lines[idx] = f"#include \"{rel_path}/dynarray.h\"\n"
         # lines[idx] = lines[idx].encode("UTF-8")
         elif "scanf_s" in line:
-            line.replace("scanf_s", "scanf")
-    with open(target_file[:-2]+"_.c", 'w', encoding="utf-8") as f:
+            lines[idx] = line.replace("scanf_s", "scanf")
+    with open(output_file, 'w', encoding="utf-8") as f:
         f.writelines(lines)
-    return target_file[:-2]+"_.c"
+    return output_file
 
 
 
@@ -294,7 +298,7 @@ def judgeFolder(cur_path):
                     idx = library_c_file_names.index(cur_f)
                     cur_c_libs[idx] = target_file_path
                 elif not cur_f.endswith("_.c"):
-                    target_file_path = process_library(target_file_path)
+                    target_file_path = process_library(target_file_path, cur_path)
                     target_files.append(target_file_path)
     
     ## process all c file
